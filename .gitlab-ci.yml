@@ -3,6 +3,7 @@ stages:
   - test
   - quality
   - package
+  - canary
   - deploy
   - performance
 
@@ -74,21 +75,8 @@ package_job:
       --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true
   image: openjdk:8-alpine
   
-deploy_staging_job:
-  stage: deploy
-  image: docker:stable
-  script:
-    - apk add --no-cache openssh-client py-pip python-dev libffi-dev openssl-dev gcc libc-dev make
-    - pip install docker-compose
-    - export DOCKER_HOST=tcp://$PLAYWD.direct.labs.play-with-docker.com:2375
-    - docker-compose down
-    - docker-compose up -d
-  environment:
-    name: staging
-    url: http://$PLAYWD-8080.direct.labs.play-with-docker.com
-    
 canary_job:
-  stage: performance
+  stage: canary
   image: docker:stable
   script:
     - apk add --no-cache openssh-client py-pip python-dev libffi-dev openssl-dev gcc libc-dev make
@@ -102,3 +90,37 @@ canary_job:
   when: manual
   only:
     - master
+    
+deploy_staging_job:
+  stage: deploy
+  image: docker:stable
+  script:
+    - apk add --no-cache openssh-client py-pip python-dev libffi-dev openssl-dev gcc libc-dev make
+    - pip install docker-compose
+    - export DOCKER_HOST=tcp://$PLAYWD.direct.labs.play-with-docker.com:2375
+    - docker-compose down
+    - docker-compose up -d
+  environment:
+    name: staging
+    url: http://$PLAYWD-8080.direct.labs.play-with-docker.com
+    
+performance_job:
+  stage: performance
+  image: docker:git
+  variables:
+    URL: http://$PLAYWD-8080.direct.labs.play-with-docker.com/
+  services:
+    - docker:stable-dind
+  script:
+    - apk add --no-cache curl
+    - x=1; while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://$PLAYWD-8080.direct.labs.play-with-docker.com/)" != "200" || $x -le 60 ]]; do sleep 5; echo $(( x++ )); done || false
+    - mkdir gitlab-exporter
+    - wget -O ./gitlab-exporter/index.js https://gitlab.com/gitlab-org/gl-performance/raw/master/index.js
+    - mkdir sitespeed-results
+    - docker run --shm-size=1g --rm -v "$(pwd)":/sitespeed.io sitespeedio/sitespeed.io:6.3.1 --plugins.add ./gitlab-exporter --outputFolder sitespeed-results $URL
+    - mv sitespeed-results/data/performance.json performance.json
+  artifacts:
+    paths:
+      - sitespeed-results/
+    reports:
+      performance: performance.json
