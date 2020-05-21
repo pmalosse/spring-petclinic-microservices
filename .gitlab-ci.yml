@@ -4,6 +4,7 @@ stages:
   - quality
   - package
   - deploy
+  - performance
 
 cache:
   paths:
@@ -85,3 +86,19 @@ deploy_staging_job:
   environment:
     name: staging
     url: http://$PLAYWD-8080.direct.labs.play-with-docker.com
+    
+canary_job:
+  stage: performance
+  image: docker:stable
+  script:
+    - apk add --no-cache openssh-client py-pip python-dev libffi-dev openssl-dev gcc libc-dev make
+    - pip install docker-compose
+    - export DOCKER_HOST=tcp://$PLAYWD.direct.labs.play-with-docker.com:2375
+    - docker-compose down
+    - docker-compose up -d
+  environment:
+    name: prod
+    url: http://$PLAYWD-8080.direct.labs.play-with-docker.com
+  when: manual
+  only:
+    - master
