@@ -22,7 +22,7 @@ build_job:
       -Dorg.slf4j.simpleLogger.showDateTime=true
       -Djava.awt.headless=true
       --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true
-  image: openjdk:8-alpine
+  image: openjdk:13-alpine
 
 test_job:
   stage: test
@@ -34,7 +34,7 @@ test_job:
       -Dorg.slf4j.simpleLogger.showDateTime=true
       -Djava.awt.headless=true
       --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true
-  image: openjdk:8-alpine
+  image: openjdk:13-alpine
 
 code_quality_job:
   stage: quality
@@ -70,7 +70,7 @@ package_job:
       -Dorg.slf4j.simpleLogger.showDateTime=true
       -Djava.awt.headless=true
       --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true
-  image: openjdk:8-alpine
+  image: openjdk:13-alpine
   
 deploy_staging_job:
   stage: deploy
