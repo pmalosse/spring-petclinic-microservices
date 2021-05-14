@@ -13,7 +13,7 @@ cache:
   key: "$CI_JOB_NAME"
 
 variables:
-    PLAYWD: ip172-18-0-85-c1u39h9bqvp00080flag
+    PLAYWD: ip172-18-0-33-c2f9hmfqf8u000c1e5ug
     
 build_job:
   stage: build
