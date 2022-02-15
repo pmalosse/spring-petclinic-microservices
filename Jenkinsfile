@@ -20,23 +20,7 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Build') {
-            parallel {
-                stage('Compile') {
-                    agent {
-                        docker {
-                            image 'maven:3.6.0-jdk-8-alpine'
-                            args '-v /root/.m2/repository:/root/.m2/repository'
-                            // to use the same node and workdir defined on top-level pipeline for all docker agents
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh ' mvn clean compile'
-                    }
-                }
-            }
-        }
+        
         stage('Integration Tests') {
             when {
                 anyOf { branch 'master'; branch 'develop' }
@@ -53,7 +37,7 @@ pipeline {
             }
             post {
                 always {
-                    junit allowEmptyResults: true, testResults: 'target/failsafe-reports/**/*.xml'
+                    junit '**/target/failsafe-reports/**/*.xml'
                 }
                 success {
                     stash(name: 'artifact', includes: '**/target/*.jar')
@@ -63,22 +47,7 @@ pipeline {
                 }
             }
         }
-        stage('Code Quality Analysis') {
-            parallel {
-                stage('SonarQube') {
-                    agent {
-                        docker {
-                            image 'maven:3.6.0-jdk-8-alpine'
-                            args '-v /root/.m2/repository:/root/.m2/repository'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh " mvn sonar:sonar -Dsonar.host.url=$SONARQUBE_URL:$SONARQUBE_PORT"
-                    }
-                }
-            }
-        }
+        
         stage('Deploy Artifact To Nexus') {
             parallel {
                 stage('Deploy admin-server') {
@@ -89,7 +58,9 @@ pipeline {
                         script {
                             list = ['spring-petclinic-admin-server', 'spring-petclinic-api-gateway', 'spring-petclinic-config-server', 'spring-petclinic-customers-service', 'spring-petclinic-discovery-server', 'spring-petclinic-vets-service']
                             for (int i = 0; i < list.size(); i++) {
-                                pom = readMavenPom file: "list[i]/pom.xml"
+                                filepom=list[i]
+                                echo "$filepom"
+                                pom = readMavenPom file: "$filepom/pom.xml"
                                 filesByGlob = findFiles(glob: "$list[$i]/target/*.${pom.packaging}")
                                 echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
                                 artifactPath = filesByGlob[0].path
