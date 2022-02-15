@@ -35,43 +35,6 @@ pipeline {
                         sh ' mvn clean compile'
                     }
                 }
-                stage('CheckStyle') {
-                    agent {
-                        docker {
-                            image 'maven:3.6.0-jdk-8-alpine'
-                            args '-v /root/.m2/repository:/root/.m2/repository'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh ' mvn checkstyle:checkstyle'
-                    }
-                    post {
-                        always {
-                            recordIssues enabledForFailure: true, tool: checkStyle()
-                        }
-                    }
-                }
-            }
-        }
-        stage('Unit Tests') {
-            when {
-                anyOf { branch 'master'; branch 'develop' }
-            }
-            agent {
-                docker {
-                    image 'maven:3.6.0-jdk-8-alpine'
-                    args '-v /root/.m2/repository:/root/.m2/repository'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh ' mvn test'
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/**/*.xml'
-                }
             }
         }
         stage('Integration Tests') {
@@ -90,7 +53,7 @@ pipeline {
             }
             post {
                 always {
-                    junit allowEmptyResults: true, testResults: 'target/failsafe-reports/**/*.xml'
+                    junit '**/target/failsafe-reports/**/*.xml'
                 }
                 success {
                     stash(name: 'artifact', includes: '**/target/*.jar')
@@ -102,58 +65,6 @@ pipeline {
         }
         stage('Code Quality Analysis') {
             parallel {
-                stage('PMD') {
-                    agent {
-                        docker {
-                            image 'maven:3.6.0-jdk-8-alpine'
-                            args '-v /root/.m2/repository:/root/.m2/repository'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh ' mvn pmd:pmd'
-                    }
-                    post {
-                        always {
-                            recordIssues enabledForFailure: true, tool: pmdParser(pattern: '**/target/pmd.xml')
-                        }
-                    }
-                }
-                stage('Findbugs') {
-                    agent {
-                        docker {
-                            image 'maven:3.6.0-jdk-8-alpine'
-                            args '-v /root/.m2/repository:/root/.m2/repository'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh ' mvn findbugs:findbugs'
-                    }
-                    post {
-                        always {
-                            recordIssues enabledForFailure: true, tool: spotBugs(pattern: '**/target/findbugsXml.xml')
-                        }
-                    }
-                }
-                /*stage('JavaDoc') {
-                    agent {
-                        docker {
-                            image 'maven:3.6.0-jdk-8-alpine'
-                            args '-v /root/.m2/repository:/root/.m2/repository'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh ' mvn javadoc:javadoc'
-                        step([$class: 'JavadocArchiver', javadocDir: './target/site/apidocs', keepAll: 'true'])
-                    }
-                    post {
-                        always {
-                            recordIssues enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
-                        }
-                    }
-                }*/
                 stage('SonarQube') {
                     agent {
                         docker {
@@ -178,7 +89,7 @@ pipeline {
                         script {
                             list = ['spring-petclinic-admin-server', 'spring-petclinic-api-gateway', 'spring-petclinic-config-server', 'spring-petclinic-customers-service', 'spring-petclinic-discovery-server', 'spring-petclinic-vets-service']
                             for (int i = 0; i < list.size(); i++) {
-                                pom = readMavenPom file: "$list[$i]/pom.xml"
+                                pom = readMavenPom file: "list[i]/pom.xml"
                                 filesByGlob = findFiles(glob: "$list[$i]/target/*.${pom.packaging}")
                                 echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
                                 artifactPath = filesByGlob[0].path
