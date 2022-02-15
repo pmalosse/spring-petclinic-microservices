@@ -70,7 +70,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'target/surefire-reports/**/*.xml'
+                    junit '**/target/surefire-reports/**/*.xml'
                 }
             }
         }
@@ -90,13 +90,13 @@ pipeline {
             }
             post {
                 always {
-                    junit 'target/failsafe-reports/**/*.xml'
+                    junit '**/target/failsafe-reports/**/*.xml'
                 }
                 success {
-                    stash(name: 'artifact', includes: 'target/*.jar')
-                    stash(name: 'pom', includes: 'pom.xml')
+                    stash(name: 'artifact', includes: '**/target/*.jar')
+                    stash(name: 'pom', includes: '**/pom.xml')
                     // to add artifacts in jenkins pipeline tab (UI)
-                    archiveArtifacts 'target/*.jar'
+                    archiveArtifacts '**/target/*.jar'
                 }
             }
         }
@@ -136,7 +136,7 @@ pipeline {
                         }
                     }
                 }
-                stage('JavaDoc') {
+                /*stage('JavaDoc') {
                     agent {
                         docker {
                             image 'maven:3.6.0-jdk-8-alpine'
@@ -153,7 +153,7 @@ pipeline {
                             recordIssues enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
                         }
                     }
-                }
+                }*/
                 stage('SonarQube') {
                     agent {
                         docker {
