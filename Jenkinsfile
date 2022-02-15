@@ -176,13 +176,15 @@ pipeline {
                     }
                     steps {
                         script {
-                            pom = readMavenPom file: 'spring-petclinic-admin-server/pom.xml'
-                            filesByGlob = findFiles(glob: "spring-petclinic-admin-server/target/*.${pom.packaging}")
-                            echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
-                            artifactPath = filesByGlob[0].path
-                            artifactExists = fileExists artifactPath
-                            if (artifactExists) {
-                                nexusArtifactUploader(
+                            list = ['spring-petclinic-admin-server', 'spring-petclinic-api-gateway', 'spring-petclinic-config-server', 'spring-petclinic-customers-service', 'spring-petclinic-discovery-server', 'spring-petclinic-vets-service']
+                            for (int i = 0; i < list.size(); i++) {
+                                pom = readMavenPom file: "$list[$i]/pom.xml"
+                                filesByGlob = findFiles(glob: "$list[$i]/target/*.${pom.packaging}")
+                                echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
+                                artifactPath = filesByGlob[0].path
+                                artifactExists = fileExists artifactPath
+                                if (artifactExists) {
+                                    nexusArtifactUploader(
                         nexusVersion: NEXUS_VERSION,
                         protocol: NEXUS_PROTOCOL,
                         nexusUrl: NEXUS_URL,
@@ -204,12 +206,12 @@ pipeline {
                         ]
                         )
                         } else {
-                                error "*** File: ${artifactPath}, could not be found"
+                                    error "*** File: ${artifactPath}, could not be found"
+                                }
                             }
                         }
                     }
                 }
-
 
             }
         }
