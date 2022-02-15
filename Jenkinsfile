@@ -47,10 +47,7 @@ pipeline {
                 }
             }
         }
-        
-        stage('Deploy Artifact To Nexus') {
-            parallel {
-                stage('Deploy admin-server') {
+      stage('Deploy Artifact To Nexus') {
                     when {
                         anyOf { branch 'master'; branch 'develop' }
                     }
@@ -61,7 +58,7 @@ pipeline {
                                 filepom=list[i]
                                 echo "$filepom"
                                 pom = readMavenPom file: "$filepom/pom.xml"
-                                filesByGlob = findFiles(glob: "$list[$i]/target/*.${pom.packaging}")
+                                filesByGlob = findFiles(glob: "$filepom/target/*.${pom.packaging}")
                                 echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
                                 artifactPath = filesByGlob[0].path
                                 artifactExists = fileExists artifactPath
@@ -93,9 +90,9 @@ pipeline {
                             }
                         }
                     }
-                }
+                
 
-            }
+            
         }
     }
 }
