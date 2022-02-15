@@ -70,7 +70,7 @@ pipeline {
             }
             post {
                 always {
-                    junit '**/target/surefire-reports/**/*.xml'
+                    junit 'target/surefire-reports/**/*.xml'
                 }
             }
         }
@@ -90,13 +90,13 @@ pipeline {
             }
             post {
                 always {
-                   junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/**/*.xml'
+                    junit 'target/failsafe-reports/**/*.xml'
                 }
                 success {
-                    stash(name: 'artifact', includes: '**/target/*.jar')
-                    stash(name: 'pom', includes: '**/pom.xml')
+                    stash(name: 'artifact', includes: 'target/*.jar')
+                    stash(name: 'pom', includes: 'pom.xml')
                     // to add artifacts in jenkins pipeline tab (UI)
-                    archiveArtifacts '**/target/*.jar'
+                    archiveArtifacts 'target/*.jar'
                 }
             }
         }
@@ -136,7 +136,24 @@ pipeline {
                         }
                     }
                 }
-                
+                stage('JavaDoc') {
+                    agent {
+                        docker {
+                            image 'maven:3.6.0-jdk-8-alpine'
+                            args '-v /root/.m2/repository:/root/.m2/repository'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh ' mvn javadoc:javadoc'
+                        step([$class: 'JavadocArchiver', javadocDir: './target/site/apidocs', keepAll: 'true'])
+                    }
+                    post {
+                        always {
+                            recordIssues enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+                        }
+                    }
+                }
                 stage('SonarQube') {
                     agent {
                         docker {
@@ -152,53 +169,49 @@ pipeline {
             }
         }
         stage('Deploy Artifact To Nexus') {
-            when {
-                anyOf { branch 'master'; branch 'develop' }
-            }
-            steps {
-                script {
-                    //    unstash 'pom'
-                    //    unstash 'artifact'
-                    // Read POM xml file using 'readMavenPom' step , this step 'readMavenPom' is included in: https://plugins.jenkins.io/pipeline-utility-steps
-                    pom = readMavenPom file: 'pom.xml'
-                    // Find built artifact under target folder
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
-                    // Print some info from the artifact found
-                    echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
-                    // Extract the path from the File found
-                    artifactPath = filesByGlob[0].path
-                    // Assign to a boolean response verifying If the artifact name exists
-                    artifactExists = fileExists artifactPath
-                    if (artifactExists) {
-                        nexusArtifactUploader(
-       nexusVersion: NEXUS_VERSION,
-       protocol: NEXUS_PROTOCOL,
-       nexusUrl: NEXUS_URL,
-       groupId: pom.groupId,
-       version: pom.version,
-       repository: NEXUS_REPOSITORY,
-       credentialsId: NEXUS_CREDENTIAL_ID,
-       artifacts: [
-        // Artifact generated such as .jar, .ear and .war files.
-        [artifactId: pom.artifactId,
-         classifier: '',
-         file: artifactPath,
-         type: pom.packaging
-        ],
-        // Lets upload the pom.xml file for additional information for Transitive dependencies
-        [artifactId: pom.artifactId,
-         classifier: '',
-         file: '**/pom.xml',
-         type: 'pom'
-        ]
-       ]
-      )
-     } else {
-                        error "*** File: ${artifactPath}, could not be found"
+            parallel {
+                stage('Deploy admin-server') {
+                    when {
+                        anyOf { branch 'master'; branch 'develop' }
+                    }
+                    steps {
+                        script {
+                            pom = readMavenPom file: 'spring-petclinic-admin-server/pom.xml'
+                            filesByGlob = findFiles(glob: "spring-petclinic-admin-server/target/*.${pom.packaging}")
+                            echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
+                            artifactPath = filesByGlob[0].path
+                            artifactExists = fileExists artifactPath
+                            if (artifactExists) {
+                                nexusArtifactUploader(
+                        nexusVersion: NEXUS_VERSION,
+                        protocol: NEXUS_PROTOCOL,
+                        nexusUrl: NEXUS_URL,
+                        groupId: pom.groupId,
+                        version: pom.version,
+                        repository: NEXUS_REPOSITORY,
+                        credentialsId: NEXUS_CREDENTIAL_ID,
+                        artifacts: [
+                            [artifactId: pom.artifactId,
+                            classifier: '',
+                            file: artifactPath,
+                            type: pom.packaging
+                            ],
+                            [artifactId: pom.artifactId,
+                            classifier: '',
+                            file: 'pom.xml',
+                            type: 'pom'
+                            ]
+                        ]
+                        )
+                        } else {
+                                error "*** File: ${artifactPath}, could not be found"
+                            }
+                        }
                     }
                 }
+
+
             }
         }
     }
 }
-
