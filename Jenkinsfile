@@ -146,7 +146,7 @@ pipeline {
                     }
                     steps {
                         sh ' mvn javadoc:javadoc'
-                        step([$class: 'JavadocArchiver', javadocDir: './target/site/apidocs', keepAll: 'true'])
+                        step([$class: 'JavadocArchiver', javadocDir: '**/target/site/apidocs', keepAll: 'true'])
                     }
                     post {
                         always {
