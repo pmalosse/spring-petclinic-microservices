@@ -174,8 +174,7 @@ pipeline {
             }
             steps {
                 script {
-                    list = ['', '', '', '', '', '', '']
-                    for (int i = 0; i < list.size(); i++){
+                        list = ['spring-petclinic-admin-server', 'spring-petclinic-api-gateway', 'spring-petclinic-config-server', 'spring-petclinic-customers-service', 'spring-petclinic-discovery-server', 'spring-petclinic-vets-service']                    for (int i = 0; i < list.size(); i++){
                         filepom = list[i]
                         pom = readMavenPom file: '$filepom/pom.xml'
                         filesByGlob = findFiles(glob: "$filepom/target/*.${pom.packaging}")
