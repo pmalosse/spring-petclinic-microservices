@@ -71,7 +71,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'target/surefire-reports/**/*.xml'
+                    junit '**/surefire-reports/**/*.xml'
                 }
             }
         }
@@ -91,12 +91,12 @@ pipeline {
             }
             post {
                 always {
-                    junit allowEmptyResults: true, testResults: 'target/failsafe-reports/**/*.xml'
+                    junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/**/*.xml'
                 }
                 success {
-                    stash(name: 'artifact', includes: 'target/*.jar')
-                    stash(name: 'pom', includes: 'pom.xml')
-                    archiveArtifacts 'target/*.jar'
+                    stash(name: 'artifact', includes: '**/target/*.jar')
+                    stash(name: 'pom', includes: '**/pom.xml')
+                    archiveArtifacts '**/target/*.jar'**/
                 }
             }
         }
@@ -175,7 +175,7 @@ pipeline {
             steps {
                 script {
                     pom = readMavenPom file: 'pom.xml'
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}")
+                    filesByGlob = findFiles(glob: "**/target/*.${pom.packaging}")
                     echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
                     artifactPath = filesByGlob[0].path
                     artifactExists = fileExists artifactPath
