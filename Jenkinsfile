@@ -177,7 +177,7 @@ pipeline {
                     list = ['spring-petclinic-admin-server', 'spring-petclinic-api-gateway', 'spring-petclinic-config-server', 'spring-petclinic-customers-service', 'spring-petclinic-discovery-server', 'spring-petclinic-vets-service']                    
                     for (int i = 0; i < list.size(); i++){
                         filepom = list[i]
-                        pom = readMavenPom file: '$filepom/pom.xml'
+                        pom = readMavenPom file: "$filepom/pom.xml"
                         filesByGlob = findFiles(glob: "$filepom/target/*.${pom.packaging}")
                         echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
                         artifactPath = filesByGlob[0].path
